@@ -1,0 +1,85 @@
+
+plugins {
+    id "java"
+    id "edu.wpi.first.GradleRIO" version "2024.3.2"
+    id "idea"
+}
+
+def javaVersion = JavaVersion.VERSION_17
+
+java {
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+}
+
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/Mechanical-Advantage/AdvantageKit")
+        credentials {
+            username = "Mechanical-Advantage-Bot"
+            password = "\u0067\u0068\u0070\u005f\u006e\u0056\u0051\u006a\u0055\u004f\u004c\u0061\u0079\u0066\u006e\u0078\u006e\u0037\u0051\u0049\u0054\u0042\u0032\u004c\u004a\u006d\u0055\u0070\u0073\u0031\u006d\u0037\u004c\u005a\u0030\u0076\u0062\u0070\u0063\u0051"
+        }
+    }
+    mavenLocal()
+}
+
+// Define my targets (RoboRIO) and artifacts (deployable files)
+
+dependencies {
+    implementation 'org.jetbrains:annotations:23.0.0'
+
+    implementation wpi.java.deps.wpilib()
+    implementation wpi.java.vendor.java()
+
+    nativeDebug wpi.java.deps.wpilibJniDebug(wpi.platforms.desktop)
+    nativeDebug wpi.java.vendor.jniDebug(wpi.platforms.desktop)
+    simulationDebug wpi.sim.enableDebug()
+
+    nativeRelease wpi.java.deps.wpilibJniRelease(wpi.platforms.desktop)
+    nativeRelease wpi.java.vendor.jniRelease(wpi.platforms.desktop)
+    simulationRelease wpi.sim.enableRelease()
+
+    testImplementation platform("org.junit:junit-bom:5.10.1")
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testImplementation "org.junit.jupiter:junit-jupiter-params"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+
+    implementation 'org.joml:joml:1.10.4'
+
+    def akitJson = new groovy.json.JsonSlurper().parseText(new File(projectDir.getAbsolutePath() + "/vendordeps/AdvantageKit.json").text)
+    annotationProcessor "org.littletonrobotics.akit.junction:junction-autolog:$akitJson.version"
+}
+
+test{
+    useJUnitPlatform()
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+}
+
+// Simulation configuration (e.g. environment variables).
+wpi.sim.addGui().defaultEnabled = true
+wpi.sim.addDriverstation()
+
+// Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
+// in order to make them all available at runtime. Also adding the manifest so WPILib
+// knows where to look for our Robot Class.
+
+// Configure jar and deploy tasks
+
+tasks.withType(JavaCompile) {
+    // Configure string concat to always inline compile
+    options.compilerArgs.add '-XDstringConcat=inline'
+}
+
+idea {
+    project {
+        // The project.sourceCompatibility setting is not always picked up, so we set explicitly
+        languageLevel = javaVersion
+    }
+    module {
+        // Improve development & (especially) debugging experience (and IDEA's capabilities) by having libraries' source & javadoc attached
+        downloadJavadoc = true
+        downloadSources = true
+        // Exclude the .vscode directory from indexing and search
+        excludeDirs+=file(".vscode" )
+    }
+}
