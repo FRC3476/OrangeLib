@@ -1,7 +1,10 @@
 package org.codeorange.utility;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.StrictFollower;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -34,6 +37,14 @@ public class TalonFXFactory {
         return config;
     }
 
+    public static CANcoderConfiguration getDefaultCANcoderConfig() {
+        var config = new CANcoderConfiguration();
+
+        config.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1;
+
+        return config;
+    }
+
     public static TalonFX createDefault(int id) {
         return createDefault(id, "*");
     }
@@ -42,6 +53,14 @@ public class TalonFXFactory {
         TalonFX motor = new TalonFX(id, CANBUS);
         OrangeUtility.betterCTREConfigApply(motor, getDefaultConfig());
         motor.clearStickyFaults();
+
+        return motor;
+    }
+
+    public static TalonFX createFollower(int id, int leaderID) {
+        var motor = createDefault(id);
+
+        motor.setControl(new StrictFollower(leaderID));
 
         return motor;
     }
